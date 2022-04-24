@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<style>
+    
+
+    body{
+        overflow: hidden;
+        padding: 0px;
+    }
+
+    .display-area{
+        white-space: nowrap;
+
+
+    }
+
+    .row{
+
+        font-size: 0px;
+        letter-spacing: 0px;
+        word-spacing: 0px;
+    }
+
+    .pixel{
+        display: inline-block;
+
+        width: 1px;
+        height: 1px;
+
+        font-size: 0px;
+        letter-spacing: 0px;
+        word-spacing: 0px;
+        background-color: red;
+
+    }
+</style>
+
+<body>
+
+</body>
+
+<script>
+
+    var audio = new Audio('music.mp3');
+
+    let previousFrameTime = new Date();
+
+    let keys = {
+        right: false,
+        left: false,
+        down: false,
+        up: false,
+        rightTime : 0,
+        leftTime : 0,
+        downTime : 0,
+        upTime : 0,
+        
+    };
+    const startTime = new Date();
+    const resolutionX = 16;
+    const resolutionY = 16;
+    const pixelDimension = 32;
+
+    let startingPosition = {x: 0, y: 14}
+
+    let player = {
+        position : {x: 0, y: 14},
+        velocity : {x: 0, y:0},
+        acceleration: {x: 0, y: 0.001},
+        accelerationRate : .001,
+        maxAccelerationRate : .0005,
+        deaccelerationRate : .001,
+        jumpToggle : false,
+        minVelocity : 0.05,
+        maxVelocity : .5,
+        animationStart : 0,
+        animationDelta : 0,
+        terrainState : null,
+        lives: 5,
+        level: 0
+    }
+
+    
+    let exit = {x: 14, y: 1};
+
+        const levels =  [//Level0
+                            [
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0],
+                            [1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0],
+                            ],
+                            //Level1
+                            [
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            ],
+                            //Level2
+                            [
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,1,1,0,1,1,1,0,1,1,1,0,1,1,1,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,0],
+                            ],
+                            //Level3
+                            [
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1],
+                            [0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            ],
+                            //Level4:
+                            [
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,1],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            ],
+                            //Level5:
+                            [
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,1,1,1,1,1,1,1,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            ],
+                            //Level6:
+                            [
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,1,1,0,1,1,0,1,1,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            ],
+                            //Level7:
+                            [
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1],
+                            [1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,0],
+                            ],
+                            //Level8:
+                            [
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            ],
+                            //Level9:
+                            [
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0],
+                            [0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                            [0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                            [0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+                            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                            ],
+                            //Level10:
+                            [
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0],
+                            [1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0],
+                            [0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0],
+                            [1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0],
+                            [0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0],
+                            [1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0],
+                            [0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0],
+                            [1,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0],
+                            [0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0],
+                            [0,0,1,0,1,0,1,0,1,0,1,0,0,0,0,0],
+                            [0,0,0,1,0,1,0,1,0,1,0,1,0,0,0,0],
+                            [1,0,0,0,1,0,1,0,1,0,1,0,0,0,0,0],
+                            ],
+                            //Empty:
+                            [
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [1,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1],
+                            ],
+                            //Empty:
+                            [
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,1,0,1,0,0,1,0,0,1,0,1,0,0,0,0],
+                            [0,1,0,1,0,1,0,1,0,1,0,1,0,0,0,0],
+                            [0,0,1,0,0,1,0,1,0,1,0,1,0,0,0,0],
+                            [0,0,1,0,0,1,0,1,0,1,0,1,0,0,0,0],
+                            [0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,1,0,1,0,1,0,1,0,1,0,0,1,0,1,0],
+                            [0,1,0,1,0,1,0,1,0,1,0,0,1,0,1,0],
+                            [0,1,0,1,0,1,0,1,0,1,1,0,1,0,1,0],
+                            [0,1,0,1,0,1,0,1,0,1,0,1,1,0,0,0],
+                            [0,0,1,0,1,0,0,1,0,1,0,0,1,0,1,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                            ],
+                    ]
+
+
+    function init(){
+        const displayArea = document.createElement('div');
+        displayArea.classList.add("display-area");
+        document.body.appendChild(displayArea);
+        displayArea.style.marginLeft = "calc(50% - " +(resolutionX*pixelDimension)/2 +"px)";
+        displayArea.style.marginTop = "calc(50vh - " +(resolutionY*pixelDimension)/2 +"px)";
+
+        for(let i = 0; i < resolutionY; i++){
+            let pixelRow = [];
+            const row = document.createElement('div');
+            row.classList.add("row");
+            displayArea.appendChild(row);
+            
+            for(let j = 0; j < resolutionX; j++){
+                const pixel = document.createElement('div');
+                pixel.classList.add("pixel");
+                pixel.id = i + "-" + j;
+                pixel.style.width = pixelDimension + "px";
+                pixel.style.height = pixelDimension + "px";
+                row.appendChild(pixel);
+                pixelRow.push(pixel);
+            }
+        }
+    }
+
+    init();
+
+    function keyDownHandler(event) {
+        if(event.keyCode == 39) {
+            audio.play();
+            keys.right = true;
+        }
+        else if(event.keyCode == 37) {
+            audio.play();
+
+            keys.left = true;
+        }
+        if(event.keyCode == 40) {
+            audio.play();
+
+            keys.down = true;
+        }
+        else if(event.keyCode == 38) {
+            audio.play();
+
+            keys.up = true;
+        }
+    }
+    function keyUpHandler(event) {
+        if(event.keyCode == 39) {
+            keys.right = false;
+        }
+        else if(event.keyCode == 37) {
+            keys.left = false;
+        }
+        if(event.keyCode == 40) {
+            keys.down = false;
+        }
+        else if(event.keyCode == 38) {
+            keys.up = false;
+        }
+    }
+    document.addEventListener('keydown', keyDownHandler, false);
+    document.addEventListener('keyup', keyUpHandler, false);
+
+    function playerMovement(lastFrame, currentFrame){
+        let frameTime = currentFrame - lastFrame;
+        player.position.yFLoor = Math.floor(player.position.y);
+        player.position.xFLoor = Math.floor(player.position.x);
+
+        if(player.position.y > 15){
+            player.position.x = startingPosition.x;
+            player.position.y = startingPosition.y;
+            player.velocity.y = 0;
+
+        }
+        else{
+            if(levels[player.level][player.position.yFLoor+1][player.position.xFLoor] == 1){
+                player.terrainState = "ground";
+            }
+            else{
+                player.terrainState = "air";
+            }
+        }
+
+        if(keys.right){
+            if(player.position.x < resolutionX){
+                if(Math.abs(player.acceleration.x) < player.maxAccelerationRate){
+                    if(player.terrainState == "air"){
+                        player.acceleration.x+= player.accelerationRate/8;
+                    }
+                    else{
+                        player.acceleration.x+= player.accelerationRate;
+                    }
+                }
+            }
+        }
+        if(keys.left){
+            if(player.position.x > 0){
+                if(Math.abs(player.acceleration.x) < player.maxAccelerationRate){
+                    if(player.terrainState == "air"){
+                        player.acceleration.x-= player.accelerationRate/8;
+                    }
+                    else{
+                        player.acceleration.x-= player.accelerationRate;
+                    }
+                }
+            }   
+        }
+        if(keys.down){
+        }
+        if(keys.up){
+            if(player.terrainState == "ground"){
+                player.jumpToggle = true;
+                player.terrainState = "jump";
+            }
+        }
+        else if(!keys.right && !keys.left && !keys.down && !keys.up){
+            player.acceleration.x = 0;
+            if(Math.abs(player.velocity.x) < player.minVelocity){
+                player.velocity.x = 0;
+            }
+            else{
+                let direction = ((player.velocity.x > 0) *2) -1;
+                player.velocity.x -= direction*player.deaccelerationRate*frameTime;
+            }
+        }
+        
+        if(player.position.x < 1 && player.velocity.x < 0){
+            player.position.x = 0;
+            player.velocity.x = 0;
+            player.acceleration.x = 0;
+        }
+        else if(player.position.x > resolutionX-1 && player.velocity.x > 0){
+            player.position.x = resolutionX-1;
+            player.velocity.x = 0;
+            player.acceleration.x = 0;
+        }
+        else{
+            if(Math.abs(player.velocity.x) > player.maxVelocity){
+                let direction = (player.velocity.x > 0)*2 - 1;
+                player.velocity.x = player.maxVelocity*direction;
+                console.log(direction);
+            }
+            else{
+                player.velocity.x += player.acceleration.x*frameTime;
+            }
+            player.position.x += player.velocity.x;
+        }
+
+        if(player.terrainState == "ground"){
+            player.velocity.y = 0;
+        }
+        else if(player.terrainState == "jump"){
+            player.velocity.y = -.4;
+            player.terrainState = "air";
+        }
+        else if(player.terrainState == "air"){
+            if(player.position.y > 15){
+                if(levels[player.level][player.position.yFLoor+1][player.position.xFLoor] == 1 && player.velocity.y >= 0){
+                    player.position.y = player.position.yFLoor;
+                    player.terrainState = "ground";
+                    console.log("ground");
+                }
+            }   
+            else{
+                player.velocity.y += player.acceleration.y*frameTime;
+            }
+        }
+
+        if(player.position.y< 1 && player.velocity.y < 0){
+            player.position.y = 0;
+        }
+        else{
+            player.position.y += player.velocity.y;
+
+        }
+
+
+        if(Math.hypot(player.position.x - exit.x, player.position.y - exit.y) < 1){
+            player.position.x = startingPosition.x;
+            player.position.y = startingPosition.y;
+            player.level++;
+        }
+
+    }
+
+    
+    function animate(){
+        const currentTime = new Date();
+        playerMovement(previousFrameTime, currentTime);
+        const timeDelta = currentTime - startTime;
+        const timeFloor = (Math.cos(timeDelta/1000));
+        //console.log(timeFloor)
+
+        for(let i = 0; i < resolutionY; i++){
+            for(let j = 0; j <resolutionX; j++){
+                const r = timeFloor*256 + 1/(resolutionX/i)*256;
+                const g = timeFloor*256 - 1/(resolutionX/j)*256
+                const b = timeFloor*256 - 1/(resolutionX/j)*256;
+                const pixel = document.getElementById(i + "-" + j);
+                pixel.style.backgroundColor = 'rgb(' + r +','+ g +',' + b +')';
+            }   
+        }
+
+        //Terrain draw:
+        for(let i = 0; i < resolutionY; i++){
+            for(let j = 0; j <resolutionX; j++){
+                if(levels[player.level][i][j] == 1){
+                    const pixel = document.getElementById(i + "-" + j);
+                    pixel.style.backgroundColor = 'rgb(0,0,0)';
+
+                }
+            }
+        }
+        const exitPixel = document.getElementById("1-14");
+        exitPixel.style.backgroundColor = 'rgb(256,256,256)';
+
+        // console.log(Math.floor(player.position.y) + "-" + Math.floor(player.position.x));
+        const playerPixel = document.getElementById(Math.floor(player.position.y) + "-" + Math.floor(player.position.x));
+        playerPixel.style.backgroundColor = 'rgb(256,256,256)';
+
+
+
+        previousFrameTime = currentTime;
+    }
+
+    window.setInterval(() => {
+        animate();
+    }, 1000/30);
+
+    
+
+
+
+</script>
+</html>
